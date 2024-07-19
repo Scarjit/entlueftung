@@ -1,0 +1,12 @@
+[Unit]
+Description=Entlueftung Service
+After=network.target
+
+[Service]
+User=scarjit
+WorkingDirectory=/home/scarjit/entlueftung
+ExecStart=/home/scarjit/entlueftung/.venv/bin/python3 main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
