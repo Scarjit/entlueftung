@@ -1,4 +1,5 @@
 import time
+import RPi.GPIO as GPIO
 
 
 def progress_bar(draw, x, y, width, height, progress, color) -> None:
@@ -6,11 +7,13 @@ def progress_bar(draw, x, y, width, height, progress, color) -> None:
     draw.rectangle((x, y, x + int(width * progress), y + height), outline=0, fill=color)
 
 
+
 def draw_menu(draw, temp_c, humidity_p, dew_point_c, last_successful_read_time, fonts, activation_c_over_dew,
-              temp_activation_c_over_dew) -> bool:
+              temp_activation_c_over_dew,relaisPin) -> bool:
     now = time.time()
     if now - last_successful_read_time > 10:
-        draw.text((5, 5), "Error reading data", font=fonts.get_font(), fill=(255, 255, 255))
+        draw.text((5, 5), "Error reading data, starting fan! {:.1f}".format(now-last_successful_read_time), font=fonts.get_font(), fill=(255, 255, 255))
+        GPIO.output(relaisPin, GPIO.LOW)
         return False
 
     activation_temp = dew_point_c + activation_c_over_dew
@@ -44,7 +47,12 @@ def draw_menu(draw, temp_c, humidity_p, dew_point_c, last_successful_read_time, 
     # Draw a big ACTIVE or INACTIVE text (depending on the temperature)
     if temp_c <= activation_temp:
         draw.text((5, 100), "AKTIV", font=fonts.get_font_large(), fill=(0, 0, 255))
+        # Write HIGH to GPIO 16
+        GPIO.output(relaisPin, GPIO.LOW)
     else:
         draw.text((5, 100), "INAKTIV", font=fonts.get_font_large(), fill=(B, R, G))
+        # Write LOW to GPIO 16
+        GPIO.output(relaisPin, GPIO.HIGH)
 
     return True
+

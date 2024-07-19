@@ -11,6 +11,8 @@ from dht22 import DHT
 from ky040 import KY040
 from menu import draw_menu
 
+import RPi.GPIO as GPIO
+
 
 class Fonts:
     def __init__(self):
@@ -42,6 +44,7 @@ def init_display() -> (ImageDraw, Image, ST7735, int, int):
 
 activation_c_over_dew = 2.0
 temp_activation_c_over_dew = 2.0
+relaisPin = 16
 
 
 def rotary_cb(rotation):
@@ -72,20 +75,34 @@ if __name__ == '__main__':
     # Selfcheck
     image_draw.text((0, 0), "Selfcheck in progress...", font=fonts.get_font(), fill="#FFFFFF")
     display.display(image)
+
+    # Setup relais
+    GPIO.setup(relaisPin, GPIO.OUT, initial=GPIO.HIGH)
+    image_draw.text((0, 15), "Testing relay...", font=fonts.get_font(), fill="#FFFFFF")
+    display.display(image)
+    GPIO.output(relaisPin, GPIO.LOW)
+    time.sleep(1)
+    GPIO.output(relaisPin, GPIO.HIGH)
+    image_draw.text((0, 30), "Relay tested", font=fonts.get_font(), fill="#FFFFFF")
+    display.display(image)
+    time.sleep(1)
+
+
     retry = 0
     while True:
         temp_c = dht.get_last_temperature_c()
         humidity_p = dht.get_last_humidity_p()
         dew_point_c = dht.get_last_dew_point_c()
         last_successful_read_time = dht.get_last_successful_read_time()
+        image_draw.text((0, 45), "Testing sensor, try: {}".format(retry), font=fonts.get_font(), fill="#FFFFFF")
+        display.display(image)
         if last_successful_read_time > 0:
             break
-        image_draw.text((0, 0), "Selfcheck in progress...{}".format(retry), font=fonts.get_font(), fill="#FFFFFF")
         retry += 1
         if retry > 100:
-            image_draw.text((0, 0), "Selfcheck failed", font=fonts.get_font(), fill="#FF0000")
+            image_draw.text((0, 60), "Selfcheck failed", font=fonts.get_font(), fill="#FF0000")
             display.display(image)
-            time.sleep(1)
+            time.sleep(5)
             exit(1)
         time.sleep(1)
 
@@ -99,7 +116,7 @@ if __name__ == '__main__':
         last_successful_read_time = dht.get_last_successful_read_time()
 
         success = draw_menu(image_draw, temp_c, humidity_p, dew_point_c, last_successful_read_time, fonts,
-                            activation_c_over_dew, temp_activation_c_over_dew)
+                            activation_c_over_dew, temp_activation_c_over_dew, relaisPin)
         display.display(image)
 
         if not success:
